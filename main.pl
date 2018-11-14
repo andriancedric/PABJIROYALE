@@ -1,0 +1,15 @@
+start :- 
+	write(' ______   _     _ ______   ______ '), nl,
+	write('(_____ \\ | |   | (____  \\ / _____)'), nl,
+	write(' _____) )  |   | |____)  ) /  ___ '), nl,
+	write('|  ____/ | |   | |  __  (| | (___)'), nl,
+	write('| |      | |___| | |__) \\ (____/ '), nl,
+	write('|_|      \\_______|______/ (_____/ '), nl,
+	write('Welcome to PUBG Royale.'), nl,
+	write('Beware!'), nl,
+	write('Never do one wrong move.'), nl,
+	write('Only the fittest, survive.'), nl,
+	repeat,
+	write('>>'),
+	read(X),
+	X = end.
