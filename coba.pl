@@ -13,10 +13,11 @@ start :-
 	write('Only the fittest, survive.'), nl, nl,
 
 	repeat,
-	write('>>'), 
+	input, 
 	read(X),
-	(X = help, help),
-	(X = quit, quit).
+	do(X).
+
+input :- write('>>').
 
 help :- 
 	write('Available commands : '), nl,
@@ -37,10 +38,16 @@ help :-
 quit :- 
 	write('Thank you for playing.'), nl,
 	write('We are waiting for the next victor!'), nl,
-	write('PUBGRoyale v.0.1, 26 November 2016'), nl,
+	write('PUBGRoyale v.0.1, 26 November 2018'), nl,
 	write('CONTRIBUTORS : '), nl,
 	write('1. Andrian Cedric'), nl,
 	write('2. Kevin Sendjaja'), nl,
 	write('3. Hansen'), nl,
 	write('4. Abel Stanley'), nl.
+
+do(help) :- help, repeat, input, read(X), do(X).
+do(quit) :- quit, !.
+do(_) :- write('Invalid command'), nl, repeat, input, read(X), do(X).
+
+
 
