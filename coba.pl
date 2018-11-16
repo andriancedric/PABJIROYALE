@@ -15,9 +15,10 @@ start :-
 	repeat,
 	input, 
 	read(X),
-	do(X).
+	do(X),
+	X == 'quit'.
 
-input :- write('>>').
+input :- write('>> ').
 
 help :- 
 	write('Available commands : '), nl,
@@ -35,7 +36,7 @@ help :-
 	write('12. save(File_Name). -- Save your game to a file.'), nl,
 	write('13. load(File_Name). -- Load previously saved game.'), nl.
 
-quit :- 
+quitgame :- 
 	write('Thank you for playing.'), nl,
 	write('We are waiting for the next victor!'), nl,
 	write('PUBGRoyale v.0.1, 26 November 2018'), nl,
@@ -45,9 +46,6 @@ quit :-
 	write('3. Hansen'), nl,
 	write('4. Abel Stanley'), nl.
 
-do(help) :- help, repeat, input, read(X), do(X).
-do(quit) :- quit, !.
-do(_) :- write('Invalid command'), nl, repeat, input, read(X), do(X).
-
-
-
+do(help) :- help, !.
+do(quit) :- quitgame, !.
+do(_) :- write('Invalid command'),nl, !.
