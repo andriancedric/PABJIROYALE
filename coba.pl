@@ -1,4 +1,99 @@
-start :- 
+/*Deklarasi data dinamis*/
+:- dynamic(game_on/1).	game_on(false).
+:- dynamic(game_set/1). game_set(false).
+
+:- dynamic(player_health/1).	player_health(0).
+
+
+
+
+/*Inisialisasi*/
+value(player_hp,100,200).
+
+initPlayer :-
+	/*Status*/
+	player_health(Health),
+	write('status ok'),nl,
+	/*Hapus nilai*/
+	retract(player_health(Health)),
+	write('retract ok'),nl,
+	/*Inisialisasi random num*/
+	value(player_hp,Init_hp_min,Init_hp_max),
+	write('set value ok'),nl,
+	/*randomize,*/
+	write('randomize ok'),nl,
+	random(Init_hp_min,Init_hp_max,Hp_baru),
+	write('random ok'),nl,
+	/*asserta random num ke status*/
+	asserta(player_health(Hp_baru)),
+	write('assert ok'),nl.
+
+init :-
+	/*Game belum di-start*/
+	game_on(false),
+	!,
+	write('start. dulu boi...'),nl.
+
+init :-
+	/*Game sudah di-start dan (asumsi) data sudah diinisialisasi*/
+	game_on(true),
+	!,
+	game_set(true),
+	!,
+	write('BEGIN'),nl.
+
+
+
+/*new game & load game*/
+new_game :-
+	/*belum start*/
+	game_on(false),
+	!,
+	write('start. dulu :"v'),nl.
+
+new_game :-
+	/*sudah start*/
+	game_on(true),
+	!,
+	write('loading...'),nl,
+	initPlayer.
+
+
+/*Deklarasi modifikasi*/
+modif_player_health(Modif) :-
+	player_health(X),
+	retract(player_health(X)),
+	ModHealth is X + Modif,
+	asserta(player_health(ModHealth)).
+
+
+/*Save*/
+save(File_Name) :-
+	open(File_Name,write,Stream),
+
+	player_health(Health),
+
+	write(Stream,Health),	write(Stream,'.'),nl(Stream),
+
+	write('Saved'),nl,
+	close(Stream).
+/*Main*/
+start :-
+	/*belum start*/
+	game_on(false),
+	!,
+	retract(game_on(false)),
+	asserta(game_on(true)),
+	/*write('start sukses').*/
+	title,
+	write('load. to load game, new_game. to start from the beginning').
+
+start :-
+	/*sudah start*/
+	game_on(true),
+	write('fokus mas'),nl.
+
+title :- 
 	write(' ______   _     _ ______   ______ '), nl,
 	write('(_____ \\ | |   | (____  \\ / _____)'), nl,
 	write(' _____) )  |   | |____)  ) /  ___ '), nl,
@@ -10,13 +105,13 @@ start :-
 	write('BEWARE!'), nl,
 	write('Never do one wrong move.'), nl,
 	write('And you will be remembered as a victor.'), nl,
-	write('Only the fittest, survive.'), nl, nl,
+	write('Only the fittest, survive.'), nl, nl.
 
-	repeat,
+	/*repeat,
 	input, 
 	read(X),
 	do(X),
-	X == 'quit'.
+	X == 'quit'.*/
 
 input :- write('>> ').
 
@@ -36,7 +131,12 @@ help :-
 	write('12. save(File_Name). -- Save your game to a file.'), nl,
 	write('13. load(File_Name). -- Load previously saved game.'), nl.
 
+status :- 
+	player_health(Health),
+	format("Health : ~p~n",[Health]).
+
 quitgame :- 
+	save('pubg.txt'),
 	write('Thank you for playing.'), nl,
 	write('We are waiting for the next victor!'), nl,
 	write('PUBGRoyale v.0.1, 26 November 2018'), nl,
