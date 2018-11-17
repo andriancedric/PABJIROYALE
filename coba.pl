@@ -3,29 +3,32 @@
 :- dynamic(game_set/1). game_set(false).
 
 :- dynamic(player_health/1).	player_health(0).
-
+:- dynamic(player_weapon/1).	player_weapon(bare_hand).
+/*:- dynamic(ammo/1).				ammo(0).*/
 
 
 
 /*Inisialisasi*/
 value(player_hp,100,200).
+value(player_weapon,0,25).
 
 initPlayer :-
 	/*Status*/
 	player_health(Health),
+	player_weapon(Weapon),
 	write('status ok'),nl,
 	/*Hapus nilai*/
 	retract(player_health(Health)),
+	retract(player_weapon(Weapon)),
 	write('retract ok'),nl,
 	/*Inisialisasi random num*/
 	value(player_hp,Init_hp_min,Init_hp_max),
 	write('set value ok'),nl,
-	/*randomize,*/
-	write('randomize ok'),nl,
 	random(Init_hp_min,Init_hp_max,Hp_baru),
 	write('random ok'),nl,
 	/*asserta random num ke status*/
 	asserta(player_health(Hp_baru)),
+	asserta(player_weapon(bare_hand)),
 	write('assert ok'),nl.
 
 init :-
@@ -58,6 +61,18 @@ new_game :-
 	write('loading...'),nl,
 	initPlayer.
 
+load :-
+	/*belum start*/
+	game_on(false),
+	!,
+	write('start dulu'),nl.
+
+load :-
+	/*sudah start*/
+	game_on(true),
+	!,
+	loadd('pubg.txt').
+
 
 /*Deklarasi modifikasi*/
 modif_player_health(Modif) :-
@@ -66,17 +81,47 @@ modif_player_health(Modif) :-
 	ModHealth is X + Modif,
 	asserta(player_health(ModHealth)).
 
+modif_player_weapon(Modif) :-
+	player_weapon(X),
+	retract(player_weapon(X)),
+	asserta(player_weapon(Weapon_baru)).
+
 
 /*Save*/
 save(File_Name) :-
 	open(File_Name,write,Stream),
 
 	player_health(Health),
+	player_weapon(Weapon),
 
 	write(Stream,Health),	write(Stream,'.'),nl(Stream),
+	write(Stream,Weapon),	write(Stream,'.'),nl(Stream),
 
 	write('Saved'),nl,
 	close(Stream).
+
+/*Load*/
+loadd(File_Name) :-
+	write('loading...'),nl,
+	open(File_Name,read,Stream),
+
+	player_health(Health),
+	player_weapon(Weapon),
+	write('unpacking resources...'),nl,
+
+	retract(player_health(Health)),
+	retract(player_weapon(Weapon)),
+	write('retract success...'),nl,
+	read(Stream, Hp_baru),
+	read(Stream, Weapon_baru),
+	write('reading data success...'),nl,
+	asserta(player_health(Hp_baru)),
+	asserta(player_weapon(Weapon)),
+	write('assert success...'),nl,
+	
+	write('loaded'),nl,
+	close(Stream).
+
 /*Main*/
 start :-
 	/*belum start*/
@@ -93,6 +138,7 @@ start :-
 	game_on(true),
 	write('fokus mas'),nl.
 
+/*DISPLAY*/
 title :- 
 	write(' ______   _     _ ______   ______ '), nl,
 	write('(_____ \\ | |   | (____  \\ / _____)'), nl,
@@ -133,7 +179,9 @@ help :-
 
 status :- 
 	player_health(Health),
-	format("Health : ~p~n",[Health]).
+	/*player_weapon(Weapon),*/
+	format("Health : ~p~n",[Health]),
+	format("Weapon : ~p~n",[Weapon]).
 
 quitgame :- 
 	save('pubg.txt'),
