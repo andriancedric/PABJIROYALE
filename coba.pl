@@ -5,14 +5,14 @@
 :- dynamic(player_health/1).	player_health(0).
 :- dynamic(player_weapon/1).	player_weapon(bare_hand).
 :- dynamic(player_position/2).	player_position(0,0).
-:- dynamic(world_width/1).		world_width(0).
+:- dynamic(map_width/1).		map_width(12).
+/*:- dynamic(map_height/1).		map_height(0).*/
 :- dynamic(world_length/1).		world_length(0).
 /*:- dynamic(ammo/1).				ammo(0).*/
 
 /*Deklarasi map*/
 map_width(12).
 map_height(12).
-
 
 /*Inisialisasi*/
 value(player_hp,100,200).
@@ -23,8 +23,8 @@ initPlayer :-
 	map_width(MW),
 	map_height(MH),
 	MW1 is MW - 1,
-	MH2 is MH - 1,
-	write('map set'),
+	MH1 is MH - 1,
+	write('map set'),nl,
 	player_health(Health),
 	player_weapon(Weapon),
 	write('status ok'),nl,
@@ -36,6 +36,8 @@ initPlayer :-
 	value(player_hp,Init_hp_min,Init_hp_max),
 	write('set value ok'),nl,
 	random(Init_hp_min,Init_hp_max,Hp_baru),
+	random(2, MH1, Row),
+	random(3, MW1, Col),
 	write('random ok'),nl,
 	/*asserta random num ke status*/
 	asserta(player_health(Hp_baru)),
@@ -45,8 +47,12 @@ initPlayer :-
 initMap :-
 	/*Generate map*/
 	map_height(MH),
+	write('height initialized'),nl,
 	initMap_row(MH),
-	create_border, create_forest, create_river, create_hill.
+	write('row initialized'),nl,
+	create_border,
+	write('border created'),nl.
+	/*create_forest, create_river, create_hill.*/
 
 initMap_row(Row) :-
 	/*Inisialisasi plain map*/
@@ -63,6 +69,7 @@ initMap_row(Row) :-
 
 create_new_map(_,_,Dist) :-
 	Dist == 0,
+	write('dist should be 0'),nl,
 	!.
 
 create_new_map(Row, Col, Dist) :-
@@ -71,27 +78,118 @@ create_new_map(Row, Col, Dist) :-
 	map_width(MW),
 	Col =< MW,
 	New_row is Row,
+	/*write('row is not changed'),nl,*/
 	New_col is Col + 1,
+	/*write('new col!'),nl,*/
 	New_dist is Dist - 1,
+	/*write('new dist!'),nl,*/
 	asserta(map(plain, Row, Col)),
+	/*write('asserta map(plain,Row, Col) ok'),nl,*/
 	!,
 	create_new_map(New_row, New_col, New_dist),
+	/*write('recc is ok'),nl,*/
 	!.
+
+/*creating custom map*/
+create_map(_,_,_,Dist,_) :-
+	/*Basis*/
+	write('checking dist...'),nl,
+	Dist == 0,
+	write('Dist is 0'),nl,
+	!.
+
+create_map(_,Row,_,_,_) :-
+	/*kasus khusus*/
+		map_height(MH), Row > MH,
+		write('error row'),nl.
+
+create_map(_,_,Col,_,_) :-
+	/*kasus khusus*/
+		map_width(MW), Col > MW,
+		write('error col'),nl.
+
+create_map(Type, Row, Col, Dist, isRow) :-
+	/*rekursif membuat map*/
+	/*Type : jenis map (border, forest, river, hill)*/
+	/*Dist : distance*/
+	/*isRow true, dist row + 1, false, dist col + 1*/
+	map_height(MH),
+	Row =< MH,
+	write('pass 1'),nl,
+	map_width(MW),
+	Col =< MW,
+	write('pass 2'),nl,
+	\+ isRow,
+	write('not is row'),nl,
+	New_row is Row,
+	New_col is Col + 1,
+	New_dist is Dist - 1,
+	map(CType, Row, Col),
+	retract(map(CType, Row, Col)),
+	asserta(map(Type, Row, Col)),
+	!,
+	create_map(Type, New_row, New_col, New_dist, isRow),
+	!.
+
+create_map(Type, Row, Col, Dist, isRow) :-
+	/*rekursif membuat map*/
+	/*Type : jenis map (border, forest, river, hill)*/
+	/*Dist : distance*/
+	/*isRow true, dist row + 1, false, dist col + 1*/
+	map_height(MH),
+	Row =< MH,
+	write('pass 11'),nl,
+	map_width(MW),
+	Col =< MW,
+	write('pass 21'),nl,
+	isRow,
+	write('is row'),nl,
+	New_row is Row + 1,
+	New_col is Col,
+	New_dist is Dist - 1,
+	map(CType, Row, Col),
+	retract(map(CType, Row, Col)),
+	asserta(map(Type, Row, Col)),
+	!,
+	create_map(Type, New_row, New_col, New_dist, isRow),
+	!.
+
+/*create_map rules*/
+create_border :-
+	write('initializing create_border'),nl,
+	map_width(MW),
+	map_height(MH),
+	write('dimension created...'),nl,
+	create_map(border, 1, 1, MW, false),
+	write('3'),nl,
+	create_map(border, 1, 1, MH, true),
+	write('2'),nl,
+	create_map(border, MH, 1, MW, false),
+	write('1'),nl,
+	create_map(border, 1, MW, MH, true),
+	write('done'),nl.
+
+
 
 init :-
 	/*Game belum di-start*/
+	game_set(false),
 	game_on(false),
 	!,
 	write('start. dulu boi...'),nl.
 
 init :-
 	/*Game sudah di-start dan (asumsi) data sudah diinisialisasi*/
+	game_set(false),
 	game_on(true),
 	!,
+	write('game is on'),nl,
 	game_set(false),
 	!,
+	write('game is set'),nl,
 	retract(game_set(false)),
 	asserta(game_set(true)),
+	write('begin initializing map...'),nl,
 
 	initMap,
 	save('pubg.txt'),
@@ -102,7 +200,7 @@ init :-
 	!,
 	game_set(true),
 	!,
-	write('BEGIN').
+	write('GAME BEGIN!').
 
 /*new game & load game*/
 new_game :-
@@ -121,14 +219,19 @@ new_game :-
 
 load :-
 	/*belum start*/
+	game_set(false),
 	game_on(false),
 	!,
 	write('start dulu'),nl.
 
 load :-
 	/*sudah start*/
+	game_set(false),
 	game_on(true),
+	/*write('game on is true'),nl,*/
 	!,
+	retract(game_set(false)),
+	asserta(game_set(true)),
 	loadd('pubg.txt'),
 	init.
 
@@ -236,6 +339,9 @@ help :-
 	write('12. save(File_Name). -- Save your game to a file.'), nl,
 	write('13. load(File_Name). -- Load previously saved game.'), nl.
 
+map :-
+	write_all_map(1,1).
+
 status :- 
 	player_health(Health),
 	/*player_weapon(Weapon),*/
@@ -266,6 +372,12 @@ write_map(Row,Col) :-
 	!,
 	format(' # ',[]).
 
+write_map(Row,Col) :-
+	/*Type*/
+	map(Type, Row, Col),
+	!,
+	format(" ~p ",[Type]).
+
 write_all_map(Row, Col) :-
 	/*basis*/
 	map_width(MW),
@@ -292,7 +404,6 @@ write_all_map(Row, Col) :-
 	New_row is Row + 1,
 	!,
 	write_all_map(New_row, 1).
-
 
 do(help) :- help, !.
 do(quit) :- quitgame, !.
