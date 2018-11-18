@@ -4,8 +4,14 @@
 
 :- dynamic(player_health/1).	player_health(0).
 :- dynamic(player_weapon/1).	player_weapon(bare_hand).
+:- dynamic(player_position/2).	player_position(0,0).
+:- dynamic(world_width/1).		world_width(0).
+:- dynamic(world_length/1).		world_length(0).
 /*:- dynamic(ammo/1).				ammo(0).*/
 
+/*Deklarasi map*/
+map_width(12).
+map_height(12).
 
 
 /*Inisialisasi*/
@@ -14,6 +20,11 @@ value(player_weapon,0,25).
 
 initPlayer :-
 	/*Status*/
+	map_width(MW),
+	map_height(MH),
+	MW1 is MW - 1,
+	MH2 is MH - 1,
+	write('map set'),
 	player_health(Health),
 	player_weapon(Weapon),
 	write('status ok'),nl,
@@ -31,6 +42,42 @@ initPlayer :-
 	asserta(player_weapon(bare_hand)),
 	write('assert ok'),nl.
 
+initMap :-
+	/*Generate map*/
+	map_height(MH),
+	initMap_row(MH),
+	create_border, create_forest, create_river, create_hill.
+
+initMap_row(Row) :-
+	/*Inisialisasi plain map*/
+	Row == 0,
+	!.
+
+initMap_row(Row) :-
+	/*Rekursif*/
+	map_width(MW),
+	create_new_map(Row, 1, MW),
+	!,
+	New_row is Row - 1,
+	initMap_row(New_row).
+
+create_new_map(_,_,Dist) :-
+	Dist == 0,
+	!.
+
+create_new_map(Row, Col, Dist) :-
+	map_height(MH),
+	Row =< MH,
+	map_width(MW),
+	Col =< MW,
+	New_row is Row,
+	New_col is Col + 1,
+	New_dist is Dist - 1,
+	asserta(map(plain, Row, Col)),
+	!,
+	create_new_map(New_row, New_col, New_dist),
+	!.
+
 init :-
 	/*Game belum di-start*/
 	game_on(false),
@@ -41,11 +88,21 @@ init :-
 	/*Game sudah di-start dan (asumsi) data sudah diinisialisasi*/
 	game_on(true),
 	!,
+	game_set(false),
+	!,
+	retract(game_set(false)),
+	asserta(game_set(true)),
+
+	initMap,
+	save('pubg.txt'),
+	write('initialized...').
+
+init :-
+	game_on(true),
+	!,
 	game_set(true),
 	!,
-	write('BEGIN'),nl.
-
-
+	write('BEGIN').
 
 /*new game & load game*/
 new_game :-
@@ -59,7 +116,8 @@ new_game :-
 	game_on(true),
 	!,
 	write('loading...'),nl,
-	initPlayer.
+	initPlayer,
+	init.
 
 load :-
 	/*belum start*/
@@ -71,7 +129,8 @@ load :-
 	/*sudah start*/
 	game_on(true),
 	!,
-	loadd('pubg.txt').
+	loadd('pubg.txt'),
+	init.
 
 
 /*Deklarasi modifikasi*/
@@ -193,6 +252,47 @@ quitgame :-
 	write('2. Kevin Sendjaja'), nl,
 	write('3. Hansen'), nl,
 	write('4. Abel Stanley'), nl.
+
+/*MAP*/
+write_map(Row,Col) :-
+	/*plain*/
+	map(plain, Row, Col),
+	!,
+	format(' - ',[]).
+
+write_map(Row,Col) :-
+	/*border*/
+	map(border, Row, Col),
+	!,
+	format(' # ',[]).
+
+write_all_map(Row, Col) :-
+	/*basis*/
+	map_width(MW),
+	map_height(MH),
+	Row == MH,
+	Col == MW,
+	!,
+	write_map(Row, Col),
+	!.
+
+write_all_map(Row, Col) :-
+	/*write col on first row*/
+	map_width(MW),
+	write_map(Row, Col),
+	Col < MW,
+	New_col is Col + 1,
+	!,
+	write_all_map(Row, New_col).
+
+write_all_map(Row, Col) :-
+	/*write col on next row*/
+	map_width(MW),
+	Col == MW,nl,nl,
+	New_row is Row + 1,
+	!,
+	write_all_map(New_row, 1).
+
 
 do(help) :- help, !.
 do(quit) :- quitgame, !.
