@@ -45,8 +45,10 @@ initPlayer :-
 	write('retract ok'),nl,
 	/*Inisialisasi random num*/
 	value(player_hp,Init_hp_min,Init_hp_max),
+	value(player_armor,Init_armor_min,Init_armor_max),
 	write('set value ok'),nl,
 	random(Init_hp_min,Init_hp_max,Hp_baru),
+	random(Init_armor_min,Init_armor_max,Armor_baru),
 	random(2, MH1, Row),
 	random(3, MW1, Col),
 	write('random ok'),nl,
@@ -261,12 +263,14 @@ modif_player_weapon(Modif) :-
 	asserta(player_weapon(Weapon_baru)).
 
 modif_player_armor(Modif) :-
+	/*reduce*/
 	player_armor(X),
 	retract(player_armor(X)),
 	ModArmor is X + Armor,
 	asserta(player_armor(ModArmor)).
 
 modif_player_armor(Modif) :-
+	/*equip & un equip*/
 	player_armor(X),
 	retract(player_armor(X)),
 	asserta(player_armor(Armor_baru)).
