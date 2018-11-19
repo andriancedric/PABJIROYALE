@@ -9,14 +9,23 @@
 /*:- dynamic(map_height/1).		map_height(0).*/
 :- dynamic(world_length/1).		world_length(0).
 /*:- dynamic(ammo/1).				ammo(0).*/
+:- dynamic(player_armor/1).		player_armor(0).
 
 /*Deklarasi map*/
 map_width(12).
 map_height(12).
 
+/*Object*/
+object :-
+	asserta(weapon(gun)),
+	asserta(weapon(pan)),
+	asserta(weapon(ak47)),
+	asserta(armor(light)).
+
 /*Inisialisasi*/
 value(player_hp,100,200).
 value(player_weapon,0,25).
+value(player_armor,0,100).
 
 initPlayer :-
 	/*Status*/
@@ -27,10 +36,12 @@ initPlayer :-
 	write('map set'),nl,
 	player_health(Health),
 	player_weapon(Weapon),
+	player_armor(Armor),
 	write('status ok'),nl,
 	/*Hapus nilai*/
 	retract(player_health(Health)),
 	retract(player_weapon(Weapon)),
+	retract(player_armor(Armor)),
 	write('retract ok'),nl,
 	/*Inisialisasi random num*/
 	value(player_hp,Init_hp_min,Init_hp_max),
@@ -42,6 +53,7 @@ initPlayer :-
 	/*asserta random num ke status*/
 	asserta(player_health(Hp_baru)),
 	asserta(player_weapon(bare_hand)),
+	asserta(player_armor(Armor_baru)),
 	write('assert ok'),nl.
 
 initMap :-
@@ -248,6 +260,16 @@ modif_player_weapon(Modif) :-
 	retract(player_weapon(X)),
 	asserta(player_weapon(Weapon_baru)).
 
+modif_player_armor(Modif) :-
+	player_armor(X),
+	retract(player_armor(X)),
+	ModArmor is X + Armor,
+	asserta(player_armor(ModArmor)).
+
+modif_player_armor(Modif) :-
+	player_armor(X),
+	retract(player_armor(X)),
+	asserta(player_armor(Armor_baru)).
 
 /*Save*/
 save(File_Name) :-
@@ -255,9 +277,11 @@ save(File_Name) :-
 
 	player_health(Health),
 	player_weapon(Weapon),
+	player_armor(Armor),
 
 	write(Stream,Health),	write(Stream,'.'),nl(Stream),
 	write(Stream,Weapon),	write(Stream,'.'),nl(Stream),
+	write(Stream,Armor),	write(Stream,'.'),nl(Stream),
 
 	write('Saved'),nl,
 	close(Stream).
@@ -269,16 +293,20 @@ loadd(File_Name) :-
 
 	player_health(Health),
 	player_weapon(Weapon),
+	player_armor(Armor),
 	write('unpacking resources...'),nl,
 
 	retract(player_health(Health)),
 	retract(player_weapon(Weapon)),
+	retract(player_armor(Armor)),
 	write('retract success...'),nl,
 	read(Stream, Hp_baru),
 	read(Stream, Weapon_baru),
+	read(Stream, Armor_baru),
 	write('reading data success...'),nl,
 	asserta(player_health(Hp_baru)),
 	asserta(player_weapon(Weapon)),
+	asserta(player_armor(Armor)),
 	write('assert success...'),nl,
 	
 	write('loaded'),nl,
@@ -344,8 +372,10 @@ map :-
 
 status :- 
 	player_health(Health),
+	player_armor(Armor),
 	/*player_weapon(Weapon),*/
 	format("Health : ~p~n",[Health]),
+	format("Armor  : ~p~n", [Armor]),
 	format("Weapon : ~p~n",[Weapon]).
 
 quitgame :- 
@@ -357,7 +387,8 @@ quitgame :-
 	write('1. Andrian Cedric'), nl,
 	write('2. Kevin Sendjaja'), nl,
 	write('3. Hansen'), nl,
-	write('4. Abel Stanley'), nl.
+	write('4. Abel Stanley'), nl,
+	halt.
 
 /*MAP*/
 write_map(Row,Col) :-
