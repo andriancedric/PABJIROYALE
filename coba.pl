@@ -1,4 +1,4 @@
-:- include(map).
+:- include(mapGNU).
 /*Deklarasi data dinamis*/
 :- dynamic(game_on/1).	game_on(false).
 :- dynamic(game_set/1). game_set(false).
@@ -38,11 +38,13 @@ initPlayer :-
 	player_health(Health),
 	player_weapon(Weapon),
 	player_armor(Armor),
+	player_position(X,Y),
 	write('status ok'),nl,
 	/*Hapus nilai*/
 	retract(player_health(Health)),
 	retract(player_weapon(Weapon)),
 	retract(player_armor(Armor)),
+	retract(player_position(X,Y)),
 	write('retract ok'),nl,
 	/*Inisialisasi random num*/
 	value(player_hp,Init_hp_min,Init_hp_max),
@@ -57,6 +59,7 @@ initPlayer :-
 	asserta(player_health(Hp_baru)),
 	asserta(player_weapon(bare_hand)),
 	asserta(player_armor(Armor_baru)),
+	asserta(player_position(Row,Col)),
 	write('assert ok'),nl.
 
 initMap :-
@@ -283,10 +286,13 @@ save(File_Name) :-
 	player_health(Health),
 	player_weapon(Weapon),
 	player_armor(Armor),
+	player_position(X,Y),
 
 	write(Stream,Health),	write(Stream,'.'),nl(Stream),
 	write(Stream,Weapon),	write(Stream,'.'),nl(Stream),
 	write(Stream,Armor),	write(Stream,'.'),nl(Stream),
+	write(Stream,X),		write(Stream,'.'),nl(Stream),
+	write(Stream,Y),		write(Stream,'.'),nl(Stream),
 
 	write('Saved'),nl,
 	close(Stream).
@@ -299,19 +305,24 @@ loadd(File_Name) :-
 	player_health(Health),
 	player_weapon(Weapon),
 	player_armor(Armor),
+	player_position(X,Y),
 	write('unpacking resources...'),nl,
 
 	retract(player_health(Health)),
 	retract(player_weapon(Weapon)),
 	retract(player_armor(Armor)),
+	retract(player_position(X,Y)),
 	write('retract success...'),nl,
 	read(Stream, Hp_baru),
 	read(Stream, Weapon_baru),
 	read(Stream, Armor_baru),
+	read(Stream, Row),
+	read(Stream, Col),
 	write('reading data success...'),nl,
 	asserta(player_health(Hp_baru)),
 	asserta(player_weapon(Weapon)),
 	asserta(player_armor(Armor)),
+	asserta(player_position(Row,Col)),
 	write('assert success...'),nl,
 	
 	write('loaded'),nl,
@@ -372,8 +383,8 @@ help :-
 	write('12. save(File_Name). -- Save your game to a file.'), nl,
 	write('13. load(File_Name). -- Load previously saved game.'), nl.
 
-# map :-
-# 	write_all_map(1,1).
+/* map :-
+ 	write_all_map(1,1). */
 
 status :- 
 	player_health(Health),
