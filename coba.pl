@@ -1,3 +1,4 @@
+:- include(map).
 /*Deklarasi data dinamis*/
 :- dynamic(game_on/1).	game_on(false).
 :- dynamic(game_set/1). game_set(false).
@@ -371,8 +372,8 @@ help :-
 	write('12. save(File_Name). -- Save your game to a file.'), nl,
 	write('13. load(File_Name). -- Load previously saved game.'), nl.
 
-map :-
-	write_all_map(1,1).
+# map :-
+# 	write_all_map(1,1).
 
 status :- 
 	player_health(Health),
