@@ -176,7 +176,18 @@ gamemap([['X','-','-','-','-','-','-','-','-','-','-','X'],
   %MOVEMENT GROUP -----------------------
     %MOVE PLAYER :
         moveValidity(X,Y,Z) :- gamemap(M), at(M,X,Y,Val), Val \= Z.
-
+	
+	placeRandomPlayer :- map_row(R), map_col(C), threatlvl(LVL), 
+                          Low is 1+LVL, High is R-LVL,
+                          Low2 is 2+LVL, High2 is C-LVL,
+                          repeat,
+                          randomize, %USE RANDOMIZE TO RESET SEED.
+                          random(Low, High, X),
+                          random(Low2, High2, Y), 
+                          ( (moveValidity(X,Y,'-'))  ->
+                            fail;
+                          ( changemap(_,X,Y,'P',M2), retract(player_position(_,_)), asserta(player_position(X,Y)) , retractall(gamemap(_)), asserta(gamemap(M2)))).
+			  
         n:- player_position(X,Y), NX is X-1,
               moveValidity(NX,Y,'X'), 
               changemap(_,X,Y,'-',M2), 
