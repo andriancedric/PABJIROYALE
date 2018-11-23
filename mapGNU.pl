@@ -252,3 +252,18 @@ gamemap([['X','-','-','-','-','-','-','-','-','-','-','X'],
           printEnemy:-
               forall(enemy(X,Y), (write(X), write(','), write(Y), nl)).
               
+%MAIN GAME TEST : --------------------------------------------------------------------------------------------
+	%RULE REPEATER :
+		callmultiple(_,0).
+		callmultiple(Command, N) :- call(Command), NewN is N-1, callmultiple(Command,NewN).
+		
+	%GAME LOOP :
+		setup :- callmultiple(placeRandomEnemy,3), call(placeRandomPlayer).	
+		game :-
+			  write('>> '),
+			  read(X),
+			  call(enemyRandomMove),
+			  call(X),
+			  ((X = 'end.') -> true ; game).
+			  
+		initgame :- setup, game.
