@@ -1,4 +1,4 @@
-:- include(mapGNU).
+:- include(maptest).
 /*Deklarasi data dinamis*/
 :- dynamic(game_on/1).	game_on(false).
 :- dynamic(game_set/1). game_set(false).
