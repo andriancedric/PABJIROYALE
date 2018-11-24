@@ -3,6 +3,8 @@
 :- dynamic(threatlvl/1). threatlvl(0).
 :- dynamic(player_position/2).  player_position(2,2).
 :- dynamic(player_weapon/1). player_weapon(watergun).
+:- dynamic(player_health/1).	player_health(50).
+:- dynamic(player_armor/1).		player_armor(0).
 :- dynamic(player_bag/2).  player_bag(5,[]).
 :- dynamic(mapEff_row/1). mapEff_row(10).
 :- dynamic(mapEff_col/1). mapEff_col(10).
@@ -32,13 +34,16 @@ gamemap([
 /*Object*/
 init_object :-
     	asserta(object(weapon,gun,3,3)),
+      asserta(object(weapon,gun,3,4)),
     	asserta(object(weapon,pan,4,4)),
     	asserta(object(weapon,ak47,3,5)),
-    	asserta(object(armor,light,4,5)),
-    	asserta(object(armor,heavy,6,2)),
+    	asserta(object(armor,vest,4,5)),
+    	asserta(object(armor,kevlar,6,2)),
     	asserta(object(medicine,tolakangin,5,5)),
     	asserta(object(medicine,panadol,4,3)),
-    	asserta(object(medicine,aspirin,5,6)).
+    	asserta(object(medicine,aspirin,5,6)),
+      asserta(object(bag,mediumbag,6,6)),
+      asserta(object(bag,largebag,6,7)).
 
 %SWI-GNU PROLOG COMPATIBILITY RULES :----------------------------------
 
@@ -428,9 +433,9 @@ init_object :-
 
 initgame :- init_object, setup, game.
 
-% TAKE & USE : --------------------------------------------------------------------------------------------
+% TAKE & USE & DROP : --------------------------------------------------------------------------------------------
 
-take(X) :- (object(_,X,X1,Y1)),
+take(X) :- object(W,X,X1,Y1),
            player_bag(Size,Inv),
            length(Inv,C),
            C < Size,
@@ -439,9 +444,11 @@ take(X) :- (object(_,X,X1,Y1)),
            retract(player_bag(Size,Inv)),
            asserta(player_bag(Size,New_inv)),
            write('Take success'),nl,
+           retract(object(W,X,X1,Y1)),
+           asserta(object(W,X,0,0)),
            print_Inv(New_inv),!.
 
-take(X) :- (object(_,X,_,_)),
+take(X) :- object(_,X,_,_),
            player_bag(Size,Inv),
            length(Inv,C),
            C < Size,
@@ -456,13 +463,62 @@ print_Inv([]) :- write('Inv Empty'),nl,!.
 print_Inv([X|[]]) :- format("~p",[X]),nl,!.
 print_Inv([X|Y]) :- format("~p,",[X]),print_Inv(Y),!.
 
-use(X) :- object(_,X,_,_),
+use(X) :- object(armor,X,_,_),
+          player_armor(Armor),
+          retract(player_armor(Armor)),
+          ( (X == 'vest') -> (Narmor is Armor+20) ; true ),
+          ( (X == 'kevlar') -> (Narmor is Armor+40) ; true ),
           player_bag(Size,Inv),
           member(X,Inv),
           select(X,Inv,New_inv),
           retract(player_bag(Size,Inv)),
           asserta(player_bag(Size,New_inv)),
+          asserta(player_armor(Narmor)),
+          format("Armor : ~p",[Narmor]),nl,
           format("~p used",[X]),nl,
+          print_Inv(New_inv),!.
+
+use(X) :- object(medicine,X,_,_),
+          player_health(Health),
+          retract(player_health(Health)),
+          ( (X == 'tolakangin') -> (Nhealth is Health+20) ; true ),
+          ( (X == 'panadol') -> (Nhealth is Health+40) ; true ),
+          ( (X == 'aspirin') -> (Nhealth is Health+60) ; true ),
+          player_bag(Size,Inv),
+          member(X,Inv),
+          select(X,Inv,New_inv),
+          retract(player_bag(Size,Inv)),
+          asserta(player_bag(Size,New_inv)),
+          ( (Nhealth > 100) -> (Nhealth2 is 100) ; Nhealth2 is Nhealth),
+          asserta(player_health(Nhealth2)),
+          format("Health : ~p",[Nhealth2]),nl,
+          format("~p used",[X]),nl,
+          print_Inv(New_inv),!.
+
+use(X) :- object(weapon,X,_,_),
+          player_weapon(Weapon),
+          player_bag(Size,Inv),
+          member(X,Inv),
+          select(X,Inv,New_inv),
+          ( (Weapon \== 'watergun') -> (append(New_inv,[Weapon],New_inv2)) ; New_inv2 is New_inv),
+          retract(player_bag(Size,Inv)),
+          asserta(player_bag(Size,New_inv2)),
+          retract(player_weapon(Weapon)),
+          asserta(player_weapon(X)),
+          format("Weapon : ~p",[X]),nl,
+          format("~p equipped",[X]),nl,
+          print_Inv(New_inv),!.
+
+use(X) :- object(bag,X,_,_),
+          ( (X == 'mediumbag') -> (Nsize is 10) ; true ),
+          ( (X == 'largebag') -> (Nsize is 15) ; true ),
+          player_bag(Size,Inv),
+          member(X,Inv),
+          select(X,Inv,New_inv),
+          retract(player_bag(Size,Inv)),
+          asserta(player_bag(Nsize,New_inv)),
+          format("Bag Size : ~p",[Nsize]),nl,
+          format("~p equipped",[X]),nl,
           print_Inv(New_inv),!.
 
 use(X) :- player_bag(_,Inv),
@@ -471,13 +527,29 @@ use(X) :- player_bag(_,Inv),
 
 positionmatchI(X1,Y1) :- player_position(X,Y), (X == X1, Y == Y1) ,!.
 
+drop(X) :- object(W,X,0,0),
+           player_bag(Size,Inv),
+           member(X,Inv),
+           select(X,Inv,New_inv),
+           player_position(X1,Y1),
+           retract(object(W,X,0,0)),
+           asserta(object(W,X,X1,Y1)),
+           retract(player_bag(Size,Inv)),
+           asserta(player_bag(Size,New_inv)),
+           format("~p dropped",[X]), nl,
+           print_Inv(New_inv),!.
+
+drop(X) :- player_bag(_,Inv),
+           format("~p is not in your bag",[X]),nl,
+           print_Inv(Inv),!.
+
 %RULE CERITA : -------------------------------------
   enemy_north:- write('You see someone is moving. DAMN! He is far away...at north. Attack him or you die?'), nl.
-  enemy_northwest:- write('Tick tock tick tock. 11 o'clock and you see someone run unto you.'), nl.
+  enemy_northwest:- write('Tick tock tick tock. 11 o\'clock and you see someone run unto you.'), nl.
   enemy_northeast:- write('Feeling lonely? Nope. Look at northeast and you are in trouble.'), nl.
   enemy_south:- write('Do you hear that? Someone is following you. Oh no! He is far behind you. Grab your weapon, now!'), nl.
   enemy_southwest:- write('Good at math? Okay. Rotate your head for 135 degrees counter-clockwise from north. TADA! ENEMY BOI!'), nl.
-  enemy_southeast:- write('Phew, feeling tired, bro? Relax.....HAH, there's a enemy at southwest. RUNNN!'), nl.
+  enemy_southeast:- write('Phew, feeling tired, bro? Relax.....HAH, there\'s a enemy at southwest. RUNNN!'), nl.
   enemy_west:- write('Men always left because women always right. Is it true? Look at left and you see your enemy. Oops.'), nl.
   enemy_east:- write('Left. Right. Left. RIGHT! He is coming. Be a man, finish him!'), nl.
   enemy_center:- write('Face to face. Your enemy is in front of you. You need to take an action. No action? PAW. He attacked you.'), nl.
@@ -493,7 +565,7 @@ positionmatchI(X1,Y1) :- player_position(X,Y), (X == X1, Y == Y1) ,!.
   northwest_deadzone :- write('One step to the north or west and you will die.'), nl.
   southeast_deadzone :- write('One step to the south or east and you will die.'), nl.
   southwest_deadzone :- write('One step to the south or west and you will die.'), nl.
-  free_zone :- write('You see nothing. You're feeling lonely right now. Maybe you already become a victor?'), nl.
+  free_zone :- write('You see nothing. You\'re feeling lonely right now. Maybe you already become a victor?'), nl.
   empty_ammo :- write('Shame on you. Weapon without ammo, huh?'), nl.
-  attack_enemy :- write('It's time. Grab your weapon. Shoot him! BOOM!'), nl.
+  attack_enemy :- write('It\'s time. Grab your weapon. Shoot him! BOOM!'), nl.
   deadzone_expanded :- write('OH NO! Deadzone is expanding. Be careful.'), nl.
