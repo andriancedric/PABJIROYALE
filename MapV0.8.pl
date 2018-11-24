@@ -8,7 +8,6 @@
 :- dynamic(mapEff_col/1). mapEff_col(10).
 :- dynamic(map_row/1). map_row(12).
 :- dynamic(map_col/1). map_col(12).
-:- dynamic(turn/1). turn(1).
 
 :-dynamic(enemy/2). % enemy(Type, HP, Weapon, X, Y)
 :-dynamic(enemynumber/1). enemynumber(0).
@@ -402,18 +401,18 @@ init_object :-
 
     dealDMG(HP, W, HP2) :- ((W = 'watergun') -> (randomize, random(1,10,DMG), HP2 is HP-DMG) ; true),
                            ((W = 'YoYo') -> (randomize, random(1,21,DMG), HP2 is HP-DMG); true),
-                           ((W = 'Da Piss Tall') -> (randomize, random(50,100,DMG), HP2 is HP-DMG) ; true).
+                           ((W = 'Da Piss Tall') -> (randomize, random(1,100,DMG), HP2 is HP-DMG) ; true).
 
     attack :- player_weapon(W), player_position(X,Y), positionmatchES(X,Y), enemy(T,HP,W,X,Y) , dealDMG(HP,W,HP2), write('Leftover enemy HP : '), write(HP2),
               enemynumber(N),
               (
-				  (HP2 < 1) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), write('ENEMY DEAD'),nl ) 
+				  (HP2 =< 0) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), write('ENEMY DEAD'),nl )
 								;
 								(retract(enemy(T,HP,W,X,Y)), asserta(enemy(T,HP2,W,X,Y)), write('ENEMY STILL ALIVE'),nl )
 			   ).
 
 %MAIN GAME TEST : --------------------------------------------------------------------------------------------
-%RULE REPEATER :
+	%RULE REPEATER :
 		callmultiple(_,0).
 		callmultiple(Command, N) :- call(Command), NewN is N-1, callmultiple(Command,NewN).
 
@@ -423,33 +422,11 @@ init_object :-
 		game :-
 			  write('>> '),
         %call(enemyRandomMove),
-			  read(Command),
-			  turn(T),
-			  /*Advance Turn Counter :*/
-				( (Command = map ; Command= look ; Command= status) -> true ; 
-					( NewT is T+1, retract(turn(T)), asserta(turn(NewT)),(
-							/*Check Deadzone Expansion :*/
-							( (NewT mod 10 =:= 0) -> expandDZ ; true),  
-							/*Check DMG :*/
-							( (player_position(X,Y), positionmatchES(X,Y), enemy(Type,_,_,X,Y) ) -> (player_health(HP), 
-								((Type == 'S') -> (randomize, random(1,5,DMG), HP2 is HP-DMG) ; true),
-								((Type == 'M')-> (randomize, random(3,10,DMG), HP2 is HP-DMG); true),
-								((Type == 'L') -> (randomize, random(15,30,DMG), HP2 is HP-DMG) ; true),
-								retract(player_health(HP)), asserta(player_health(HP2)), write('Current HP : '), write(HP2), nl,
-								/*CHECK GAMEOVER */
-								( ( HP2 < 1 ) -> (write('YOU DIED!'), halt) ; true)
-								); true
-							)
-						);true
-					)
-				),
-			  /*Call Command :*/
-				(call(Command) -> true ; game),
-			  
-			  /*Check EXIT command : */
-				((Command = end) -> halt ; game).
+			  read(X),
+			  (call(X) -> true ; game),
+			  ((X = end) -> halt ; game).
 
-		initgame :- setup, game.
+initgame :- init_object, setup, game.
 
 % TAKE & USE : --------------------------------------------------------------------------------------------
 
@@ -495,10 +472,15 @@ use(X) :- player_bag(_,Inv),
 positionmatchI(X1,Y1) :- player_position(X,Y), (X == X1, Y == Y1) ,!.
 
 %RULE CERITA : -------------------------------------
-  enemy_north:- write('You see someone is moving. DAMN! He is in front of you. Attack him or you die?'), nl.
-  enemy_south:- write('Do you hear that? Someone is following you. Oh no! He is behind you. Grab your weapon, now!'), nl.
+  enemy_north:- write('You see someone is moving. DAMN! He is far away...at north. Attack him or you die?'), nl.
+  enemy_northwest:- write('Tick tock tick tock. 11 o'clock and you see someone run unto you.'), nl.
+  enemy_northeast:- write('Feeling lonely? Nope. Look at northeast and you are in trouble.'), nl.
+  enemy_south:- write('Do you hear that? Someone is following you. Oh no! He is far behind you. Grab your weapon, now!'), nl.
+  enemy_southwest:- write('Good at math? Okay. Rotate your head for 135 degrees counter-clockwise from north. TADA! ENEMY BOI!'), nl.
+  enemy_southeast:- write('Phew, feeling tired, bro? Relax.....HAH, there's a enemy at southwest. RUNNN!'), nl.
   enemy_west:- write('Men always left because women always right. Is it true? Look at left and you see your enemy. Oops.'), nl.
   enemy_east:- write('Left. Right. Left. RIGHT! He is coming. Be a man, finish him!'), nl.
+  enemy_center:- write('Face to face. Your enemy is in front of you. You need to take an action. No action? PAW. He attacked you.'), nl.
   your_weapon :- write('Your weapon is ...'), player_weapon(X), write(X), nl.
   look_weapon :- write('Hey. No weapon, huh? Look around. You see a weapon. Grab it.'), nl.
   look_armor :- write('Feeling insecure? Just grab that armor and you feel free.'), nl.
