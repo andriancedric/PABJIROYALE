@@ -1,9 +1,9 @@
 :- dynamic(gamemap/1).
 :- dynamic(deathclock/1). deathclock(0).
 :- dynamic(threatlvl/1). threatlvl(0).
-:- dynamic(player_health/1). player_health(25).
+:- dynamic(player_health/1). player_health(50).
 :- dynamic(player_position/2).  player_position(2,2).
-:- dynamic(player_weapon/1). player_weapon(watergun).
+:- dynamic(player_weapon/1). player_weapon(ak47).
 :- dynamic(player_ammo/1). player_ammo(5).
 :- dynamic(player_armor/1). player_armor(10).
 :- dynamic(player_inventory/1). player_inventory(0).
@@ -308,10 +308,10 @@ init_object :-
 	  
 	   placeObjectMM(Type,MM,X,Y,Mresult) :-
                               moveValidityMM(MM,X,Y,'X'),(
-							  ((Type == 'weapon') -> (changeMM(MM,X,Y,'W',Mresult),!) ; true );
-							  ((Type == 'item') -> (changeMM(MM,X,Y,'I',Mresult),!) ; true );
-							  ((Type == 'ammo') -> (changeMM(MM,X,Y,'A',Mresult),!) ; true );
-							  ((Type == 'armor') -> (changeMM(MM,X,Y,'R',Mresult),!) ; true )
+							  ((Type == 'weapon') -> (changeMM(MM,X,Y,'W',Mresult)) ; true ),
+							  ((Type == 'item') -> (changeMM(MM,X,Y,'I',Mresult)) ; true ),
+							  ((Type == 'ammo') -> (changeMM(MM,X,Y,'A',Mresult)) ; true ),
+							  ((Type == 'armor') -> (changeMM(MM,X,Y,'R',Mresult)) ; true )
 							  ).
 							  
 							  
@@ -339,8 +339,8 @@ init_object :-
                               placeRandomEnemyMM(MM,Mresult)).
 
       placeEnemyMM(MM,X,Y,Mresult) :-
-                              moveValidityMM(MM,X,Y,'X'),
-                              changeMM(MM,X,Y,'E',Mresult).
+                              (moveValidityMM(MM,X,Y,'X') ->
+                              changeMM(MM,X,Y,'E',Mresult) ; true).
 
       changeMM(MM,X,Y,A,M2) :- replace_row_col(MM,X,Y,A,M2). /*retract(minimaps(M)), asserta(minimaps(M2))*/
 
@@ -652,16 +652,16 @@ init_object :-
 						   ((W = 'ak47') -> (randomize, random(20,25,DMG), HP2 is HP-DMG); true),
                            ((W = 'Da Piss Tall') -> (randomize, random(50,100,DMG), HP2 is HP-DMG) ; true).
 
-    attack :- player_weapon(W), player_position(X,Y), player_ammo(AM), ( 
+    attack :- player_weapon(PW), player_position(X,Y), player_ammo(AM), ( 
 				(positionmatchES(X,Y), AM > 0) -> 
 				  (	  NewAM is AM-1, retract(player_ammo(AM)), asserta(player_ammo(NewAM)),
-					  enemy(T,HP,EW,X,Y) , dealDMG(HP,W,HP2),
-					  DMG is HP-HP2, player_weapon(PW),
+					  enemy(T,HP,EW,X,Y) , dealDMG(HP,PW,HP2),
+					  DMG is abs(HP-HP2),
 					  write('########## ENEMY IS DAMAGED by '), write(DMG), write(' using '), write(PW), write(' ##########'),nl,
 					  write('Leftover enemy HP : '), write(HP2), nl,
 					  enemynumber(N),
 					  (
-						  (HP2 < 1) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), TypeName is 'weapon', asserta(object(TypeName,EW,X,Y)) , write('ENEMY DEAD'),nl ) 
+						  (HP2 < 1) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), asserta(object('weapon',EW,X,Y)) , write('ENEMY DEAD'),nl ) 
 										;
 										(retract(enemy(T,HP,W,X,Y)), asserta(enemy(T,HP2,W,X,Y)), write('ENEMY STILL ALIVE'),nl )
 					   )
@@ -671,15 +671,16 @@ init_object :-
 						(positionmatchES(X,Y)) ->
 							(
 							write('<<<<<<<<<<----------SYSTEM MESSAGE---------->>>>>>>>>>'),nl,
-							write('              No enemy in your position!        '),nl,
+							write('                     No Ammo Left!                    '),nl,
 							write('<<<<<<<<<<----------*****END.*****---------->>>>>>>>>>'),nl
 							)
 						;
 							(
 							write('<<<<<<<<<<----------SYSTEM MESSAGE---------->>>>>>>>>>'),nl,
-							write('                     No Ammo Left!                    '),nl,
+							write('              No enemy in your position!        '),nl,
 							write('<<<<<<<<<<----------*****END.*****---------->>>>>>>>>>'),nl
 							)
+							
 					)
 				).
 				
@@ -732,10 +733,10 @@ init_object :-
 				),
 			  /*Call Command :*/
 				(call(Command) -> true ; game),
-			  
-			  /*ENEMY RANDOM MOVEMENT : */
-				call(enemyRandomMove),
 				
+			   /*ENEMY RANDOM MOVEMENT : */
+				%( (Command = map ; Command= look ; Command= status) -> true ; call(enemyRandomMove)),
+									
 			   /*ENEMY REINFORCEMENT EVERY 13th TURN : */
 				turn(NextT),
 				( ( (NextT mod 13) =:= 0 )-> (call(placeRandomEnemy), write('WARNING : A REINFORCEMENT HAS ARRIVED!'), nl) ; true),
