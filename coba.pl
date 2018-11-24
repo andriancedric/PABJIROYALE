@@ -21,7 +21,11 @@ object :-
 	asserta(weapon(gun)),
 	asserta(weapon(pan)),
 	asserta(weapon(ak47)),
-	asserta(armor(light)).
+	asserta(armor(light)),
+	asserta(armor(heavy)),
+	asserta(medicine(tolakangin)),
+	asserta(medicine(panadol)),
+	asserta(medicine(aspirin)).
 
 /*Inisialisasi*/
 value(player_hp,100,200).
