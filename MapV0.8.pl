@@ -8,6 +8,7 @@
 :- dynamic(mapEff_col/1). mapEff_col(10).
 :- dynamic(map_row/1). map_row(12).
 :- dynamic(map_col/1). map_col(12).
+:- dynamic(turn/1). turn(1).
 
 :-dynamic(enemy/2). % enemy(Type, HP, Weapon, X, Y)
 :-dynamic(enemynumber/1). enemynumber(0).
@@ -401,18 +402,18 @@ init_object :-
 
     dealDMG(HP, W, HP2) :- ((W = 'watergun') -> (randomize, random(1,10,DMG), HP2 is HP-DMG) ; true),
                            ((W = 'YoYo') -> (randomize, random(1,21,DMG), HP2 is HP-DMG); true),
-                           ((W = 'Da Piss Tall') -> (randomize, random(1,100,DMG), HP2 is HP-DMG) ; true).
+                           ((W = 'Da Piss Tall') -> (randomize, random(50,100,DMG), HP2 is HP-DMG) ; true).
 
     attack :- player_weapon(W), player_position(X,Y), positionmatchES(X,Y), enemy(T,HP,W,X,Y) , dealDMG(HP,W,HP2), write('Leftover enemy HP : '), write(HP2),
               enemynumber(N),
               (
-				  (HP2 =< 0) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), write('ENEMY DEAD'),nl )
+				  (HP2 < 1) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), write('ENEMY DEAD'),nl ) 
 								;
 								(retract(enemy(T,HP,W,X,Y)), asserta(enemy(T,HP2,W,X,Y)), write('ENEMY STILL ALIVE'),nl )
 			   ).
 
 %MAIN GAME TEST : --------------------------------------------------------------------------------------------
-	%RULE REPEATER :
+%RULE REPEATER :
 		callmultiple(_,0).
 		callmultiple(Command, N) :- call(Command), NewN is N-1, callmultiple(Command,NewN).
 
@@ -422,11 +423,33 @@ init_object :-
 		game :-
 			  write('>> '),
         %call(enemyRandomMove),
-			  read(X),
-			  (call(X) -> true ; game),
-			  ((X = end) -> halt ; game).
+			  read(Command),
+			  turn(T),
+			  /*Advance Turn Counter :*/
+				( (Command = map ; Command= look ; Command= status) -> true ; 
+					( NewT is T+1, retract(turn(T)), asserta(turn(NewT)),(
+							/*Check Deadzone Expansion :*/
+							( (NewT mod 10 =:= 0) -> expandDZ ; true),  
+							/*Check DMG :*/
+							( (player_position(X,Y), positionmatchES(X,Y), enemy(Type,_,_,X,Y) ) -> (player_health(HP), 
+								((Type == 'S') -> (randomize, random(1,5,DMG), HP2 is HP-DMG) ; true),
+								((Type == 'M')-> (randomize, random(3,10,DMG), HP2 is HP-DMG); true),
+								((Type == 'L') -> (randomize, random(15,30,DMG), HP2 is HP-DMG) ; true),
+								retract(player_health(HP)), asserta(player_health(HP2)), write('Current HP : '), write(HP2), nl,
+								/*CHECK GAMEOVER */
+								( ( HP2 < 1 ) -> (write('YOU DIED!'), halt) ; true)
+								); true
+							)
+						);true
+					)
+				),
+			  /*Call Command :*/
+				(call(Command) -> true ; game),
+			  
+			  /*Check EXIT command : */
+				((Command = end) -> halt ; game).
 
-initgame :- init_object, setup, game.
+		initgame :- setup, game.
 
 % TAKE & USE : --------------------------------------------------------------------------------------------
 
