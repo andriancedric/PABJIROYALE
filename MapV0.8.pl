@@ -394,7 +394,7 @@ gamemap([
     attack :- player_weapon(W), player_position(X,Y), positionmatchES(X,Y), enemy(T,HP,W,X,Y) , dealDMG(HP,W,HP2), write('Leftover enemy HP : '), write(HP2),
               enemynumber(N),
               (
-				  (HP =< 0) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), write('ENEMY DEAD'),nl ) 
+				  (HP2 =< 0) -> ( NewN is N-1,retract(enemy(T,HP,W,X,Y)), retract(enemynumber(N)), asserta(enemynumber(NewN)), write('ENEMY DEAD'),nl ) 
 								;
 								(retract(enemy(T,HP,W,X,Y)), asserta(enemy(T,HP2,W,X,Y)), write('ENEMY STILL ALIVE'),nl )
 			   ).
