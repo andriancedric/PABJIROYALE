@@ -470,3 +470,25 @@ use(X) :- player_bag(_,Inv),
           print_Inv(Inv),!.
 
 positionmatchI(X1,Y1) :- player_position(X,Y), (X == X1, Y == Y1) ,!.
+
+%RULE CERITA : -------------------------------------
+  enemy_north:- write('You see someone is moving. DAMN! He is in front of you. Attack him or you die?'), nl.
+  enemy_south:- write('Do you hear that? Someone is following you. Oh no! He is behind you. Grab your weapon, now!'), nl.
+  enemy_west:- write('Men always left because women always right. Is it true? Look at left and you see your enemy. Oops.'), nl.
+  enemy_east:- write('Left. Right. Left. RIGHT! He is coming. Be a man, finish him!'), nl.
+  your_weapon :- write('Your weapon is ...'), player_weapon(X), write(X), nl.
+  look_weapon :- write('Hey. No weapon, huh? Look around. You see a weapon. Grab it.'), nl.
+  look_armor :- write('Feeling insecure? Just grab that armor and you feel free.'), nl.
+  look_medicine :- write('Give up? Never say that! Claim your victor. Take that medicine and kill all your enemy!'), nl.
+  north_deadzone :- write('One step to the north and you will die.'), nl.
+  south_deadzone :- write('One step to the south and you will die.'), nl.
+  west_deadzone :- write('One step to the west and you will die.'), nl.
+  east_deadzone :- write('One step to the east and you will die.'), nl.
+  northeast_deadzone :- write('One step to the north or east and you will die.'), nl.
+  northwest_deadzone :- write('One step to the north or west and you will die.'), nl.
+  southeast_deadzone :- write('One step to the south or east and you will die.'), nl.
+  southwest_deadzone :- write('One step to the south or west and you will die.'), nl.
+  free_zone :- write('You see nothing. You're feeling lonely right now. Maybe you already become a victor?'), nl.
+  empty_ammo :- write('Shame on you. Weapon without ammo, huh?'), nl.
+  attack_enemy :- write('It's time. Grab your weapon. Shoot him! BOOM!'), nl.
+  deadzone_expanded :- write('OH NO! Deadzone is expanding. Be careful.'), nl.
