@@ -728,7 +728,7 @@ init_object :-
 
 	%GAME LOOP :
 		end:- write('Thank you for playing, lol. Actually, YOU should THANK me.').
-		setup :- callmultiple(placeRandomEnemy,1), callmultiple(placeRandomObject,10), call(placeRandomPlayer), call(initMM(1,1)).
+		setup :- callmultiple(placeRandomEnemy,3), callmultiple(placeRandomObject,10), call(placeRandomPlayer), call(initMM(1,1)).
 		game :-
 			  write('>> '),
 			  read(Command),
