@@ -89,6 +89,7 @@ init_object :-
 						NewN is N+1, readmultipleO(Stream,NewN Stream2). */
 						
 	savegame(File_Name) :-
+		write('<<<<<<<<<<----------SYSTEM MESSAGE---------->>>>>>>>>>'),nl,
 		open(File_Name,write,Stream),
 		%gamemap(M),
 		%write(Stream,M),	write(Stream,'.'),nl(Stream),
@@ -140,8 +141,9 @@ init_object :-
 				)
 			),
 
-		write('Saved'),nl,
-		close(Stream).
+		write('Your game progress has successfully been recorded to '), write(File_Name),nl,
+		close(Stream),
+		write('<<<<<<<<<<----------*****END.*****---------->>>>>>>>>>'),nl.
 
 readmultipleE(_,0).
 readmultipleE(Stream,N) :- 
@@ -162,6 +164,7 @@ readmultipleO(Stream,N) :-
 					NewN is N-1, readmultipleO(Stream, NewN).
 			
 	loadd(File_Name) :-
+		write('<<<<<<<<<<----------SYSTEM MESSAGE---------->>>>>>>>>>'),nl,
 		write('LOADING PROCESS INITIATED!'),nl,
 		open(File_Name,read,Stream),
 
@@ -234,7 +237,8 @@ readmultipleO(Stream,N) :-
 		write('Successfully populated the database.'),nl,
 		
 		write('LOAD FINISH!'),nl,
-		close(Stream).
+		close(Stream),
+		write('<<<<<<<<<<----------*****END.*****---------->>>>>>>>>>'),nl.
 
 		
 	loadgame(_) :-
@@ -956,6 +960,49 @@ readmultipleO(Stream,N) :-
 				).
 				
 %MAIN GAME TEST : --------------------------------------------------------------------------------------------
+
+	title :- 
+			write(' ______   _     _ ______   ______ '), nl,
+			write('(_____ \\ | |   | (____  \\ / _____)'), nl,
+			write(' _____) )  |   | |____)  ) /  ___ '), nl,
+			write('|  ____/ | |   | |  __  (| | (___)'), nl,
+			write('| |      | |___| | |__) \\ (____/ '), nl,
+			write('|_|      \\_______|______/ (_____/ '), nl,
+			write('Welcome to PUBG Royale.'), nl,
+			write('Choose your destiny, here.'), nl,
+			write('BEWARE!'), nl,
+			write('Never do one wrong move.'), nl,
+			write('And you will be remembered as a victor.'), nl,
+			write('Only the fittest, survive.'), nl, nl.
+			
+	help :- 
+			write('Available commands : '), nl,
+			write('1. start. -- Start the game.'), nl,
+			write('2. help. -- Show availabe commands.'), nl,
+			write('3. quit. -- Quit the game.'), nl,
+			write('4. look. -- Look everything around you (showing 3x3 map).'), nl,
+			write('5. n. s. e. or w. -- Move (north, south, east, or west).'), nl,
+			write('6. map. -- Look at the map and detect enemies.'), nl,
+			write('7. take(Object). -- Pick up an object beside you.'), nl,
+			write('8. drop(Object). -- Drop an object from you.'), nl,
+			write('9. use(Object). -- Use an object.'), nl,
+			write('10. attack. -- Attack an enemy beside you'), nl,
+			write('11. status. -- Show yout status.'), nl,
+			write('12. savegame(File_Name). -- Save your game to a file.'), nl,
+			write('13. loadgame(File_Name). -- Load previously saved game.'), nl.
+	
+	quitgame :- 
+		savegame('pubg.txt'),
+		write('Thank you for playing.'), nl,
+		write('We are waiting for the next victor!'), nl,
+		write('PUBGRoyale v.0.1, 26 November 2018'), nl,
+		write('CONTRIBUTORS : '), nl,
+		write('1. Andrian Cedric'), nl,
+		write('2. Kevin Sendjaja'), nl,
+		write('3. Hansen'), nl,
+		write('4. Abel Stanley'), nl,
+		halt.
+		
 	%RULE REPEATER :
 		callmultiple(_,0).
 		callmultiple(Command, N) :- call(Command), NewN is N-1, callmultiple(Command,NewN).
@@ -1019,16 +1066,21 @@ readmultipleO(Stream,N) :-
 				
 			   /*ENEMY RANDOM MOVEMENT : */
 				( (Command = map ; Command= look ; Command= status; Command = savegame ; Command = loadgame) -> true ; call(enemyRandomMove)),
-									
-			   /*ENEMY REINFORCEMENT EVERY 13th TURN : */
+				
+			   /* ITEM RESUPPLY  EVERY 5th TURN*/
 				turn(NextT),
+				( ( (NextT mod 5) =:= 0 )-> (call(placeRandomObject), warning, write('WARNING : AN ITEM HAS JUST DROPPED!!'), nl, warningE) ; true),
+			   /*ENEMY REINFORCEMENT EVERY 13th TURN : */
 				( ( (NextT mod 13) =:= 0 )-> (call(placeRandomEnemy), warning, write('WARNING : A REINFORCEMENT HAS ARRIVED!'), nl, warningE) ; true),
 			   
 			  /*Check EXIT command : */
 				((Command = end) -> halt ; game).
 
 		initgame :- setup, game.
-		start :- write('WELCOME TO MOBILE LEGENDS! Five Minutes till deadline tubesch!'), nl,
+		
+		start :- game_started(true), write('Game has already been started, dummy...'), nl, !.
+		
+		start :- title, nl, write('WELCOME TO MOBILE LEGENDS! Five Minutes till deadline tubesch!'), nl,
 				retract(game_started(_)),
 				asserta(game_started(true)),
 				initgame.
