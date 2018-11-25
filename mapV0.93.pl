@@ -136,7 +136,7 @@ init_object :-
 				  format("~p used",[X]),nl,
 				  print_Inv(New_inv),!.
 
-		use(X) :- object(medicine,X,_,_),
+		use(X) :- object(item,X,_,_),
 				  player_health(Health),
 				  retract(player_health(Health)),
 				  ( (X == 'tolakangin') -> (Nhealth is Health+20) ; true ),
@@ -168,9 +168,9 @@ init_object :-
 				  print_Inv(New_inv),!.
 
 		use(X) :- object(bag,X,_,_),
-				  ( (X == 'mediumbag') -> (Nsize is 10) ; true ),
-				  ( (X == 'largebag') -> (Nsize is 15) ; true ),
 				  player_bag(Size,Inv),
+				  ( (X == 'mediumbag') -> (Nsize is Size + 5) ; true ),
+				  ( (X == 'largebag') -> (Nsize is Size+ 10) ; true ),
 				  member(X,Inv),
 				  select(X,Inv,New_inv),
 				  retract(player_bag(Size,Inv)),
@@ -352,18 +352,33 @@ init_object :-
 							  ((Type == 'weapon') -> (changeMM(MM,X,Y,'W',Mresult)) ; true ),
 							  ((Type == 'item') -> (changeMM(MM,X,Y,'I',Mresult)) ; true ),
 							  ((Type == 'ammo') -> (changeMM(MM,X,Y,'A',Mresult)) ; true ),
-							  ((Type == 'armor') -> (changeMM(MM,X,Y,'R',Mresult)) ; true )
+							  ((Type == 'armor') -> (changeMM(MM,X,Y,'R',Mresult)) ; true ),
+							  ((Type == 'bag') -> (changeMM(MM,X,Y,'B',Mresult)) ; true )
 							  ).
 							  
-							  
+		
+	  
+		checkDZ(MM,MM10):-    player_position(X,Y), Yleft is (Y-1), Yright is (Y+1), Xdown is (X+1), Xup is (X-1),
+							  ((at(M,X,Yright,Val), Val == 'X') -> changeMM(MM,2,3,'X',MM2); append([],MM,MM2)),
+							  ((at(M,Xup,Y,Val), Val == 'X')-> changeMM(MM2,1,2,'X',MM3); append([],MM2,MM3)),
+							  ((at(M,X,Yleft,Val), Val == 'X')->changeMM(MM3,2,1,'X',MM4);append([],MM3,MM4)),
+							  ((at(M,Xdown,Y,Val), Val == 'X')-> changeMM(MM4,3,2,'X',MM5);append([],MM4,MM5)),
+							  ((at(M,X,Y,Val), Val == 'X') -> changeMM(MM5,2,2,'X',MM6);append([],MM5,MM6)),
+							  ((at(M,Xup,Yright,Val), Val == 'X') -> changeMM(MM6,1,3,'X',MM7); append([],MM6,MM7)),
+							  ((at(M,Xdown,Yright,Val), Val == 'X')-> changeMM(MM7,3,3,'X',MM8); append([],MM7,MM8)),
+							  ((at(M,Xup,Yleft,Val), Val == 'X')->changeMM(MM8,1,1,'X',MM9);append([],MM8,MM9)),
+							  ((at(M,Xdown,Yleft,Val), Val == 'X')-> changeMM(MM9,3,1,'X',MM10);append([],MM9,MM10)).	
+							
       look :- minimaps(MM), player_position(X,Y), at(MM,X,Y,MM2),
 							(
+								%PLACE DEADZONES (if exists) : 
+								checkDZ(MM2,MM3),
 								%PLACE PLAYER :
-								changeMM(MM2,2,2,'P',MM3),
+								changeMM(MM3,2,2,'P',MM4),
 								%SHOW OBJECTS :
-								(checkObject(MM3,MM4)),
+								(checkObject(MM4,MM5)),
 								%SHOW ENEMY :
-								(checkEnemyF(MM4, Result)),
+								(checkEnemyF(MM5, Result)),
 								
 								retractall(cur_minimap(_)),
 								asserta(cur_minimap(Result)),
@@ -545,7 +560,30 @@ init_object :-
 						  placeW(Low,Low2,High,High2, WeaponName),
 						  placeI(Low,Low2,High,High2, ItemName).
 						  
-                  
+    placeRandomBag :- 
+					map_row(R), map_col(C), threatlvl(LVL),
+                    Low is 1+LVL, High is R-LVL,
+                    Low2 is 2+LVL, High2 is C-LVL,
+					placeB1(Low,Low2,High,High2, mediumbag),
+					placeB2(Low,Low2,High,High2, largebag).
+
+					
+	placeB1(Low,Low2,High,High2,BagName):- 	repeat,
+													randomize,
+													random(Low, High, X),
+													random(Low2, High2, Y),
+													(placeValidity(X,Y,'-') ->
+														asserta(object('bag',BagName,X,Y)) ; fail
+													).
+								
+	placeB2(Low,Low2,High,High2,BagName):- 	repeat,
+													randomize,
+													random(Low, High, X),
+													random(Low2, High2, Y),
+													(placeValidity(X,Y,'-') ->
+														asserta(object('bag',BagName,X,Y)) ; fail
+													).
+					
 
 	placeW(Low,Low2,High,High2,WeaponName):- 	repeat,
 													randomize,
@@ -722,25 +760,37 @@ init_object :-
 				).
 				
 %MAIN GAME TEST : --------------------------------------------------------------------------------------------
-%RULE REPEATER :
+	%RULE REPEATER :
 		callmultiple(_,0).
 		callmultiple(Command, N) :- call(Command), NewN is N-1, callmultiple(Command,NewN).
-
+		
+	%Fact CHECKER :
+		check(Fact) :-
+			call(Fact), !,
+			true;
+			(warning,write('Input Not Valid, Please REINPUT!'), nl, warningE, fail.
+			
 	%GAME LOOP :
 		end:- write('Thank you for playing, lol. Actually, YOU should THANK me.').
-		setup :- callmultiple(placeRandomEnemy,3), callmultiple(placeRandomObject,10), call(placeRandomPlayer), call(initMM(1,1)).
+		setup :- callmultiple(placeRandomEnemy,1), callmultiple(placeRandomObject,10), callmultiple(placeRandomBag,5), call(placeRandomPlayer), call(initMM(1,1)).
 		game :-
 			  write('>> '),
 			  read(Command),
 			  turn(T),
+			  /*Call Command :*/
+				((Command) -> true ; game),	
+				
 			  /*Advance Turn Counter :*/
 				( (Command = map ; Command= look ; Command= status) -> true ; 
 					( NewT is T+1, retract(turn(T)), asserta(turn(NewT)),
 						(
+							player_position(X,Y), 
 							/*Check Deadzone Expansion :*/
-							( ( (NewT mod 10) =:= 0) -> expandDZ ; true),  
+							( ( (NewT mod 10) =:= 0) -> (expandDZ, warning,deadzone_expanded,warningE) ; true),gamemap(Map),
+							( ( at(Map,X,Y,CurPos), CurPos == 'X') -> (warning,write('The Deadzone has caught up to you. Nothing escapes the vile clutches of death...'),nl,warningE,halt) ; true),
+							
 							/*Check DMG :*/
-							( (player_position(X,Y), positionmatchES(X,Y), enemy(_,_,W,X,Y) ) -> 
+							( (positionmatchES(X,Y), enemy(_,_,W,X,Y) ) -> 
 								( 
 									player_health(HP), player_armor(AR),
 									( (AR < 1) -> 
@@ -756,19 +806,18 @@ init_object :-
 												DMG is AR-AR2,
 												retract(player_armor(AR)), 
 												asserta(player_armor(AR2)),
-												((AR2 < 1) -> (write('WARNING : ARMOR IS BROKEN'),nl) ; true)
+												((AR2 < 1) -> (warning, write('WARNING : ARMOR IS BROKEN'),nl, warningE) ; true)
 											)
 									), 
 									write('########### YOU ARE DAMAGED by '), write(DMG), write(' using '), write(W), write(' ##########'),nl,
 								/*CHECK GAMEOVER */
-									( (player_health(EndHP), EndHP < 1 ) -> (nl,write('YOU DIED! GAMEOVER'),nl, halt) ; true)
+									( (player_health(EndHP), EndHP < 1 ) -> (nl,warning,write('YOU DIED! GAMEOVER'),nl, warningE ,halt) ; true)
 								); true
 							)
 						)
 					)
 				),
-			  /*Call Command :*/
-				(call(Command) -> true ; game),	
+			  
 			  /*WIN CON. CHECK:*/
 				(enemy_number(EN), EN == 0 -> (write('CONGRATULATIONS! Go eat your chicken dinner now, or whatever, I do not care'),halt) ; game),
 				
@@ -777,7 +826,7 @@ init_object :-
 									
 			   /*ENEMY REINFORCEMENT EVERY 13th TURN : */
 				turn(NextT),
-				( ( (NextT mod 13) =:= 0 )-> (call(placeRandomEnemy), write('WARNING : A REINFORCEMENT HAS ARRIVED!'), nl) ; true),
+				( ( (NextT mod 13) =:= 0 )-> (call(placeRandomEnemy), warning, write('WARNING : A REINFORCEMENT HAS ARRIVED!'), nl, warningE) ; true),
 			   
 			  /*Check EXIT command : */
 				((Command = end) -> halt ; game).
@@ -787,6 +836,8 @@ init_object :-
 
 
 %RULE CERITA : -------------------------------------
+  warning:- write('!!!!!!!!! WARNING !!!!!!!!!!'),nl.
+  warningE:- write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!'),nl.
   enemy_north:- write('You see someone is moving. DAMN! He is far away...at north. Attack him or you die?'), nl.
   enemy_northwest:- write('Tick tock tick tock. 11 on the clock and you see someone run unto you.'), nl.
   enemy_northeast:- write('Feeling lonely? Nope. Look at northeast and you are in trouble.'), nl.
