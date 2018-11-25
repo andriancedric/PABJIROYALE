@@ -899,10 +899,9 @@ readmultipleO(Stream,N) :-
 
         enemyMoveList([ne,ee,se,we]).
 
-        enemyRandomMove:-
-              repeat,
+        enemyRandomMove:-   
               forall(enemy(Enemytype,HP,W,X,Y), (
-					(randomize,
+					(repeat,randomize,
 					random(0,4,Idx),
 					enemyMoveList(L),
 					nth0(Idx,L,Move),
@@ -968,7 +967,7 @@ readmultipleO(Stream,N) :-
 			
 	%GAME LOOP :
 		end:- write('Thank you for playing, lol. Actually, YOU should THANK me.').
-		setup :- callmultiple(placeRandomEnemy,1), callmultiple(placeRandomObject,10), callmultiple(placeRandomBag,1), call(placeRandomPlayer), call(initMM(1,1)).
+		setup :- callmultiple(placeRandomEnemy,10), callmultiple(placeRandomObject,10), callmultiple(placeRandomBag,1), call(placeRandomPlayer), call(initMM(1,1)).
 		game :-
 			  write('>> '),
 			  read(Command),
@@ -977,7 +976,7 @@ readmultipleO(Stream,N) :-
 				((Command) -> true ; game),	
 				
 			  /*Advance Turn Counter :*/
-				( (Command = map ; Command= look ; Command= status) -> true ; 
+				( (Command = map ; Command= look ; Command= status; Command = savegame ; Command = loadgame) -> true ; 
 					( NewT is T+1, retract(turn(T)), asserta(turn(NewT)),
 						(
 							player_position(X,Y), 
@@ -1015,10 +1014,10 @@ readmultipleO(Stream,N) :-
 				),
 			  
 			  /*WIN CON. CHECK:*/
-				(enemy_number(EN), EN == 0 -> (write('CONGRATULATIONS! Go eat your chicken dinner now, or whatever, I do not care'),halt) ; game),
+				(enemy_number(EN), EN == 0 -> (write('CONGRATULATIONS! Go eat your chicken dinner now, or whatever, I do not care'),halt) ; true),
 				
 			   /*ENEMY RANDOM MOVEMENT : */
-				%( (Command = map ; Command= look ; Command= status) -> true ; call(enemyRandomMove)),
+				( (Command = map ; Command= look ; Command= status; Command = savegame ; Command = loadgame) -> true ; call(enemyRandomMove)),
 									
 			   /*ENEMY REINFORCEMENT EVERY 13th TURN : */
 				turn(NextT),
