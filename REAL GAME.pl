@@ -3,7 +3,7 @@
 :- dynamic(threatlvl/1). threatlvl(0).
 :- dynamic(player_health/1). player_health(50).
 :- dynamic(player_position/2).  player_position(2,2).
-:- dynamic(player_weapon/1). player_weapon(ak47).
+:- dynamic(player_weapon/1). player_weapon(watergun).
 :- dynamic(player_ammo/1). player_ammo(5).
 :- dynamic(player_armor/1). player_armor(10).
 :- dynamic(player_bag/2).  player_bag(5,[]).
@@ -920,13 +920,75 @@ readmultipleO(Stream,N) :-
 
 % ATTACK : --------------------------------------------------------------------------------------------
 
-    dealDMG(HP, W, HP2) :- ((W = 'watergun') -> (randomize, random(1,10,DMG), HP2 is HP-DMG) ; true),
-                           ((W = 'yoyo') -> (randomize, random(1,21,DMG), HP2 is HP-DMG); true),
-						   ((W = 'gun') -> (randomize, random(10,20,DMG), HP2 is HP-DMG); true),
-						   ((W = 'pan') -> (randomize, random(1,30,DMG), HP2 is HP-DMG); true),
-						   ((W = 'ak47') -> (randomize, random(20,25,DMG), HP2 is HP-DMG); true),
-                           ((W = 'Da Piss Tall') -> (randomize, random(50,100,DMG), HP2 is HP-DMG) ; true).
+    dealDMG(HP, W, HP2) :- ((W == 'watergun') -> (randomize, random(7,13,DMG), HP2 is HP-DMG) ; true),
+                           ((W == 'yoyo') -> (randomize, random(1,21,DMG), HP2 is HP-DMG); true),
+						   ((W == 'gun') -> (randomize, random(10,20,DMG), HP2 is HP-DMG); true),
+						   ((W == 'pan') -> (randomize, random(30,50,DMG), HP2 is HP-DMG); true),
+						   ((W == 'ak47') -> (randomize, random(20,25,DMG), HP2 is HP-DMG); true).
 
+	rangeValidity(W,X,Y,X2,Y2) :-  
+							Yleft is Y-1, Yright is Y+1, Xdown is X+1, Xup is X-1,
+						   ((W == 'watergun') -> true; true),
+                           ((W == 'yoyo') -> true ; true),
+						   ((W == 'gun') -> ( (X2 = Xdown , Y2 = Y );
+												  (X2 = Xup, Y2 = Y) ; 
+												  (X2 = X, Y2 = Yleft);
+												  (X2 = X, Y2 = Yright) ); true ),
+						   ((W == 'pan') -> (X2 = X , Y2 = Y ); true),
+						   ((W == 'ak47') -> ( (X2 = Xdown , Y2 = Yright );
+												  (X2 = Xup, Y2 = Yleft) ; 
+												  (X2 = Xup, Y2 = Yright);
+												  (X2 = Xdown, Y2 = Yleft) ); true).
+		
+	nearbyEnemy(X,Y) :-  enemy(_,_,_,X2,Y2), 
+						(
+						(X =:= X2, Y =:= Y2) ; (X-1 =:= X2,Y=:=Y2) ; (X-1 =:= X2, Y+1 =:=Y2);
+						(X =:= X2, Y+1 =:= Y2) ; (X+1 =:= X2,Y+1=:=Y2) ; (X+1 =:= X2, Y =:= Y2);
+						(X+1 =:= X2, Y-1 =:= Y2) ; (X =:= X2,Y-1=:=Y2) ; (X+1 =:= X2, Y-1 =:=Y2)
+						),
+						!.
+						
+	attackS(Dir) :- player_weapon(PW), player_position(X,Y), player_ammo(AM),  
+					((Dir = 'n') -> (X2 is X-1, Y2 is Y);true),
+					((Dir = 'c') -> (X2 is X, Y2 is Y);true),
+					((Dir = 'ne') -> (X2 is X-1, Y2 is Y+1);true),
+					((Dir = 'e') -> (X2 is X, Y2 is Y+1);true),
+					((Dir = 'se') -> (X2 is X+1, Y2 is Y+1);true),
+					((Dir = 's') -> (X2 is X+1, Y2 is Y);true),
+					((Dir = 'sw') -> (X2 is X+1, Y2 is Y-1);true),
+					((Dir = 'w') -> (X2 is X, Y2 is Y-1);true),
+					((Dir = 'nw') -> (X2 is X-1, Y2 is Y-1);true),
+					((nearbyEnemy(X,Y), rangeValidity(PW,X,Y,X2,Y2), AM > 0) -> 
+						  (	  NewAM is AM-1, retract(player_ammo(AM)), asserta(player_ammo(NewAM)),
+							  enemy(T,HP,EW,X2,Y2), dealDMG(HP,PW,HP2),
+							  DMG is abs(HP-HP2),
+							  write('########## ENEMY IS DAMAGED by '), write(DMG), write(' using '), write(PW), write(' ##########'),nl,
+							  write('Leftover enemy HP : '), write(HP2), nl,
+							  enemy_number(N),
+							  (
+								  (HP2 < 1) -> ( NewN is N-1,retract(enemy(T,HP,W,X2,Y2)), retract(enemy_number(N)), asserta(enemy_number(NewN)), asserta(object('weapon',EW,X2,Y2)) , write('ENEMY DEAD'),nl ) 
+												;
+												(retract(enemy(T,HP,W,X2,Y2)), asserta(enemy(T,HP2,W,X2,Y2)), write('ENEMY STILL ALIVE'),nl )
+							   )
+						   )
+						;
+						   (
+								(nearbyEnemy(X,Y),rangeValidity(W,X,Y,X2,Y2)) ->
+									(
+									write('<<<<<<<<<<----------SYSTEM MESSAGE---------->>>>>>>>>>'),nl,
+									write('                     No Ammo Left!                    '),nl,
+									write('<<<<<<<<<<----------*****END.*****---------->>>>>>>>>>'),nl
+									)
+								;
+									(
+									write('<<<<<<<<<<----------SYSTEM MESSAGE---------->>>>>>>>>>'),nl,
+									write('              No enemy in your specified spot!        '),nl,
+									write('<<<<<<<<<<----------*****END.*****---------->>>>>>>>>>'),nl
+									)
+									
+							)
+						).
+						
     attack :- player_weapon(PW), player_position(X,Y), player_ammo(AM), ( 
 				(positionmatchES(X,Y), AM > 0) -> 
 				  (	  NewAM is AM-1, retract(player_ammo(AM)), asserta(player_ammo(NewAM)),
@@ -1015,7 +1077,7 @@ readmultipleO(Stream,N) :-
 			
 	%GAME LOOP :
 		end:- write('Thank you for playing, lol. Actually, YOU should THANK me.').
-		setup :- callmultiple(placeRandomEnemy,10), callmultiple(placeRandomObject,10), callmultiple(placeRandomBag,1), call(placeRandomPlayer), call(initMM(1,1)).
+		setup :- callmultiple(placeRandomEnemy,20), callmultiple(placeRandomObject,10), callmultiple(placeRandomBag,1), call(placeRandomPlayer), call(initMM(1,1)).
 		game :-
 			  write('>> '),
 			  read(Command),
@@ -1024,7 +1086,7 @@ readmultipleO(Stream,N) :-
 				((Command) -> true ; game),	
 				
 			  /*Advance Turn Counter :*/
-				( (Command = map ; Command= look ; Command= status; Command = savegame ; Command = loadgame) -> true ; 
+				( (Command = map ; Command= look ; Command= status; Command = savegame ; Command = loadgame; Command = help) -> true ; 
 					( NewT is T+1, retract(turn(T)), asserta(turn(NewT)),
 						(
 							player_position(X,Y), 
@@ -1065,13 +1127,13 @@ readmultipleO(Stream,N) :-
 				(enemy_number(EN), EN == 0 -> (write('CONGRATULATIONS! Go eat your chicken dinner now, or whatever, I do not care'),halt) ; true),
 				
 			   /*ENEMY RANDOM MOVEMENT : */
-				( (Command = map ; Command= look ; Command= status; Command = savegame ; Command = loadgame) -> true ; call(enemyRandomMove)),
+				( (Command = map ; Command= look ; Command= status; Command = savegame ; Command = loadgame ;Command = help) -> true ; call(enemyRandomMove)),
 				
 			   /* ITEM RESUPPLY  EVERY 5th TURN*/
 				turn(NextT),
-				( ( (NextT mod 5) =:= 0 )-> (call(placeRandomObject), warning, write('WARNING : AN ITEM HAS JUST DROPPED!!'), nl, warningE) ; true),
+				( ( (NextT mod 5) =:= 0 , (Command \= map ; Command\= look ; Command\= status; Command \= savegame ; Command \= loadgame; Command \= help))-> (call(placeRandomObject), warning, write('WARNING : AN ITEM HAS JUST DROPPED!!'), nl, warningE) ; true),
 			   /*ENEMY REINFORCEMENT EVERY 13th TURN : */
-				( ( (NextT mod 13) =:= 0 )-> (call(placeRandomEnemy), warning, write('WARNING : A REINFORCEMENT HAS ARRIVED!'), nl, warningE) ; true),
+				( ( (NextT mod 13) =:= 0 , (Command \= map ; Command\= look ; Command\= status; Command \= savegame ; Command \= loadgame; Command \= help))-> (call(placeRandomEnemy), warning, write('WARNING : A REINFORCEMENT HAS ARRIVED!'), nl, warningE) ; true),
 			   
 			  /*Check EXIT command : */
 				((Command = end) -> halt ; game).
